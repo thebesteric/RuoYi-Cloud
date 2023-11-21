@@ -61,6 +61,6 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    app: service-ruoyi-gateway
+    app: ruoyi-gateway
   sessionAffinity: None
   type: ClusterIP
