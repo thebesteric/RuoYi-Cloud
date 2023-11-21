@@ -31,7 +31,7 @@ pipeline {
       }
     }
 
-    stage('phw6cv') {
+    stage('打包镜像') {
       parallel {
         stage('打包ruoyi-gateway镜像') {
           agent none
@@ -109,7 +109,7 @@ pipeline {
       }
     }
 
-    stage('ddg7hi') {
+    stage('推送镜像') {
       parallel {
         stage('推送ruoyi-gateway镜像') {
           agent none
@@ -204,18 +204,77 @@ pipeline {
       }
     }
 
-    stage('部署到dev环境') {
+    stage('部署dev环境') {
       parallel {
         stage('部署ruoyi-gateway到dev环境') {
           agent none
           steps {
             container('maven') {
-              withCredentials([kubeconfigContent(credentialsId: 'demo-kubeconfig', variable: 'VARIABLE')]) {
-                sh 'ls -al'
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-gateway'
                 sh 'envsubst < ruoyi-gateway/deploy.yml | kubectl apply -f -'
               }
             }
+          }
+        }
 
+        stage('部署ruoyi-auth到dev环境') {
+          agent none
+          steps {
+            container('maven') {
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-auth'
+                sh 'envsubst < ruoyi-auth/deploy.yml | kubectl apply -f -'
+              }
+            }
+          }
+        }
+
+        stage('部署ruoyi-monitor到dev环境') {
+          agent none
+          steps {
+            container('maven') {
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-visual/ruoyi-monitor'
+                sh 'envsubst < ruoyi-visual/ruoyi-monitor/deploy.yml | kubectl apply -f -'
+              }
+            }
+          }
+        }
+
+        stage('部署ruoyi-file到dev环境') {
+          agent none
+          steps {
+            container('maven') {
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-modules/ruoyi-file'
+                sh 'envsubst < ruoyi-modules/ruoyi-file/deploy.yml | kubectl apply -f -'
+              }
+            }
+          }
+        }
+
+        stage('部署ruoyi-job到dev环境') {
+          agent none
+          steps {
+            container('maven') {
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-modules/ruoyi-job'
+                sh 'envsubst < ruoyi-modules/ruoyi-job/deploy.yml | kubectl apply -f -'
+              }
+            }
+          }
+        }
+
+        stage('部署ruoyi-system到dev环境') {
+          agent none
+          steps {
+            container('maven') {
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-modules/ruoyi-system'
+                sh 'envsubst < ruoyi-modules/ruoyi-system/deploy.yml | kubectl apply -f -'
+              }
+            }
           }
         }
 
