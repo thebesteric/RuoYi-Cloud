@@ -24,7 +24,7 @@ spec:
       imagePullSecrets:
         - name: aliyun-docker-hub
       containers:
-        - image: $REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-gateway:$BUILD_NUMBER
+        - image: $REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-gateway:SNAPSHOT-$BUILD_NUMBER
           readinessProbe:
             httpGet:
               path: /actuator/health
