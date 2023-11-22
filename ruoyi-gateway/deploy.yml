@@ -63,4 +63,4 @@ spec:
   selector:
     app: ruoyi-gateway
   sessionAffinity: None
-  type: ClusterIP
+  type: NodePort

@@ -214,7 +214,9 @@ pipeline {
                 sh 'ls -al ruoyi-gateway'
                 sh 'envsubst < ruoyi-gateway/deploy.yml | kubectl apply -f -'
               }
+
             }
+
           }
         }
 
@@ -226,7 +228,9 @@ pipeline {
                 sh 'ls -al ruoyi-auth'
                 sh 'envsubst < ruoyi-auth/deploy.yml | kubectl apply -f -'
               }
+
             }
+
           }
         }
 
@@ -238,7 +242,9 @@ pipeline {
                 sh 'ls -al ruoyi-visual/ruoyi-monitor'
                 sh 'envsubst < ruoyi-visual/ruoyi-monitor/deploy.yml | kubectl apply -f -'
               }
+
             }
+
           }
         }
 
@@ -250,7 +256,9 @@ pipeline {
                 sh 'ls -al ruoyi-modules/ruoyi-file'
                 sh 'envsubst < ruoyi-modules/ruoyi-file/deploy.yml | kubectl apply -f -'
               }
+
             }
+
           }
         }
 
@@ -262,7 +270,9 @@ pipeline {
                 sh 'ls -al ruoyi-modules/ruoyi-job'
                 sh 'envsubst < ruoyi-modules/ruoyi-job/deploy.yml | kubectl apply -f -'
               }
+
             }
+
           }
         }
 
@@ -274,16 +284,19 @@ pipeline {
                 sh 'ls -al ruoyi-modules/ruoyi-system'
                 sh 'envsubst < ruoyi-modules/ruoyi-system/deploy.yml | kubectl apply -f -'
               }
+
             }
+
           }
         }
 
       }
     }
 
-    stage('Archive artifacts') {
+    stage('发送邮件') {
+      agent none
       steps {
-        archiveArtifacts(artifacts: 'target/*.jar', followSymlinks: false)
+        mail(to: 'whatisjava@hotmail.com', cc: '', subject: "demo-构建成果-$BUILD_NUMBER", body: "demo 项目构建完成-SNAPSHOT-$BUILD_NUMBER")
       }
     }
 
