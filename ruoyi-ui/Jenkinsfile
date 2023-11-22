@@ -1,0 +1,114 @@
+pipeline {
+  agent {
+    node {
+      label 'nodejs'
+    }
+
+  }
+  stages {
+    stage('拉取代码') {
+      agent none
+      steps {
+        container('nodejs') {
+          sh 'echo 开始拉取代码...'
+          git(url: 'https://github.com/thebesteric/RuoYi-Cloud.git', credentialsId: '', branch: 'master', changelog: true, poll: false)
+          sh 'echo 代码拉取完成'
+          sh 'ls -al ruoyi-ui'
+        }
+
+      }
+    }
+
+    stage('项目编译') {
+      parallel {
+        stage('前端项目编译') {
+          agent none
+          steps {
+            container('nodejs') {
+              sh 'npm -version'
+              sh 'ls -al ruoyi-ui'
+              sh 'npm --prefix ruoyi-ui install --registry=https://registry.npmmirror.com'
+              sh 'npm --prefix ruoyi-ui run build:prod'
+              sh 'ls -al ruoyi-ui/dist'
+            }
+
+          }
+        }
+
+      }
+    }
+
+    stage('打包镜像') {
+      parallel {
+        stage('打包ruoyi-ui镜像') {
+          agent none
+          steps {
+            container('nodejs') {
+              sh 'ls -al ruoyi-ui'
+              sh 'ls -al ruoyi-ui/dist'
+              sh 'docker build -t ruoyi-ui:v1 -f ruoyi-ui/Dockerfile ./ruoyi-ui'
+            }
+
+          }
+        }
+
+      }
+    }
+
+    stage('推送镜像') {
+      parallel {
+        stage('推送ruoyi-ui镜像') {
+          agent none
+          steps {
+            container('nodejs') {
+              withCredentials([usernamePassword(credentialsId: 'aliyun-docker-registry', passwordVariable: 'ALI_DOCKER_PASSWD', usernameVariable: 'ALI_DOCKER_USER')]) {
+                sh 'echo "$ALI_DOCKER_PASSWD" | docker login $REGISTRY -u "$ALI_DOCKER_USER" --password-stdin'
+                sh 'docker tag ruoyi-ui:v1 $REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-ui:SNAPSHOT-$BUILD_NUMBER'
+                sh 'docker push $REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-ui:SNAPSHOT-$BUILD_NUMBER'
+              }
+
+            }
+
+          }
+        }
+
+      }
+    }
+
+    stage('部署dev环境') {
+      parallel {
+        stage('部署ruoyi-ui到dev环境') {
+          agent none
+          steps {
+            container('nodejs') {
+              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
+                sh 'ls -al ruoyi-ui'
+                sh 'envsubst < ruoyi-ui/deploy.yml | kubectl apply -f -'
+              }
+
+            }
+
+          }
+        }
+
+      }
+    }
+
+    stage('发送邮件') {
+      agent none
+      steps {
+        mail(to: 'whatisjava@hotmail.com', cc: '', subject: "demo-前端构建成果-$BUILD_NUMBER", body: "demo-前端项目构建完成-SNAPSHOT-$BUILD_NUMBER")
+      }
+    }
+
+  }
+  environment {
+    DOCKER_CREDENTIAL_ID = 'dockerhub-id'
+    GITHUB_CREDENTIAL_ID = 'github-id'
+    KUBECONFIG_CREDENTIAL_ID = 'demo-kubeconfig'
+    REGISTRY = 'registry.cn-hangzhou.aliyuncs.com'
+    DOCKERHUB_NAMESPACE = 'wesoft'
+    GITHUB_ACCOUNT = 'kubesphere'
+    APP_NAME = 'devops-java-sample'
+  }
+}

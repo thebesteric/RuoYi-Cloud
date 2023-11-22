@@ -20,31 +20,13 @@ pipeline {
     }
 
     stage('项目编译') {
-      parallel {
-        stage('后端项目编译') {
-          agent none
-          steps {
-            container('maven') {
-              sh 'echo 开始编译项目...'
-              sh 'mvn clean package -Dmaven.test.skip=true'
-              sh 'echo 项目编译完成'
-            }
-
-          }
+      agent none
+      steps {
+        container('maven') {
+          sh 'echo 开始编译项目...'
+          sh 'mvn clean package -Dmaven.test.skip=true'
+          sh 'echo 项目编译完成'
         }
-
-        stage('前端项目编译') {
-          agent none
-          steps {
-            container('nodejs') {
-              sh 'npm install --registry=https://registry.npmmirror.com'
-              sh 'npm run build:prod'
-              sh 'ls'
-            }
-
-          }
-        }
-
       }
     }
 
@@ -118,18 +100,6 @@ pipeline {
               sh 'ls ruoyi-modules/ruoyi-system'
               sh 'ls ruoyi-modules/ruoyi-system/target'
               sh 'docker build -t ruoyi-system:v1 -f ruoyi-modules/ruoyi-system/Dockerfile ./ruoyi-modules/ruoyi-system'
-            }
-
-          }
-        }
-
-        stage('打包ruoyi-ui镜像') {
-          agent none
-          steps {
-            container('nodejs') {
-              sh 'ls ruoyi-ui'
-              sh 'ls ruoyi-ui/dist'
-              sh 'docker build -t ruoyi-ui:v1 -f ruoyi-ui/Dockerfile ./ruoyi-ui'
             }
 
           }
@@ -230,21 +200,6 @@ pipeline {
           }
         }
 
-        stage('推送ruoyi-ui镜像') {
-          agent none
-          steps {
-            container('maven') {
-              withCredentials([usernamePassword(credentialsId: 'aliyun-docker-registry', passwordVariable: 'ALI_DOCKER_PASSWD', usernameVariable: 'ALI_DOCKER_USER')]) {
-                sh 'echo "$ALI_DOCKER_PASSWD" | docker login $REGISTRY -u "$ALI_DOCKER_USER" --password-stdin'
-                sh 'docker tag ruoyi-ui:v1 $REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-ui:SNAPSHOT-$BUILD_NUMBER'
-                sh 'docker push $REGISTRY/$DOCKERHUB_NAMESPACE/ruoyi-ui:SNAPSHOT-$BUILD_NUMBER'
-              }
-
-            }
-
-          }
-        }
-
       }
     }
 
@@ -334,27 +289,13 @@ pipeline {
           }
         }
 
-        stage('部署ruoyi-ui到dev环境') {
-          agent none
-          steps {
-            container('maven') {
-              withCredentials([kubeconfigFile(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
-                sh 'ls -al ruoyi-modules/ruoyi-system'
-                sh 'envsubst < ruoyi-ui/deploy.yml | kubectl apply -f -'
-              }
-
-            }
-
-          }
-        }
-
       }
     }
 
     stage('发送邮件') {
       agent none
       steps {
-        mail(to: 'whatisjava@hotmail.com', cc: '', subject: "demo-构建成果-$BUILD_NUMBER", body: "demo 项目构建完成-SNAPSHOT-$BUILD_NUMBER")
+        mail(to: 'whatisjava@hotmail.com', cc: '', subject: "demo-后端构建成果-$BUILD_NUMBER", body: "demo-后端项目构建完成-SNAPSHOT-$BUILD_NUMBER")
       }
     }
 
