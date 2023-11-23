@@ -60,6 +60,7 @@ spec:
       port: 8080
       protocol: TCP
       targetPort: 8080
+      nodePort: 32100
   selector:
     app: ruoyi-gateway
   sessionAffinity: None
